@@ -1,0 +1,47 @@
+{
+  "name": "mokshajs",
+  "version": "0.9.5",
+  "description": "Ultra lightweight frontend library",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest",
+    "build": "webpack --config webpack.config.js"
+  },
+  "keywords": [
+    "frontend",
+    "library",
+    "lightweight"
+  ],
+  "author": "Kensei <tehkensei@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kenseitehdev/MokshaJS.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kenseitehdev/MokshaJS/issues"
+  },
+  "homepage": "https://github.com/kenseitehdev/MokshaJS#readme",
+  "peerDependencies": {
+    "react": "^17.0.0",
+    "vue": "^2.6.0"
+  },
+  "devDependencies": {
+    "babel-loader": "^8.0.0",
+    "jest": "^27.0.0",
+    "jsdoc": "^4.0.3",
+    "webpack": "^5.0.0"
+  },
+  "files": [
+    "moksha.js",
+    "README.md"
+  ],
+  "publishConfig": {
+    "tag": "beta"
+  },
+  "private": false,
+  "dependencies": {
+    "docsify": "^4.13.1",
+    "mokshajs": "^0.9.5"
+  }
+}
