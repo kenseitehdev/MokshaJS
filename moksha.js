@@ -1,3 +1,4 @@
+import { Global } from './global.js'
 let components =[];
 class Batch {
     constructor() {
@@ -408,6 +409,7 @@ const $ = {
     lazyLoad,
     throttle,
     debounce,
+    Global,
     reactive,
     Error,
     components,
