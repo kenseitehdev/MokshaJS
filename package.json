@@ -1,53 +1,11 @@
 {
   "name": "mokshajs",
   "version": "1.0.0",
-  "description": "Ultra lightweight frontend library",
-  "main": "app.js",
+  "description": "ultra lightweight, robust frontend micro- library/framework # Documentation",
+  "main": "min.js",
   "scripts": {
-    "test": "jest",
-    "build": "webpack --config webpack.config.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "frontend",
-    "library",
-    "lightweight"
-  ],
-  "author": "Kensei <tehkensei@gmail.com>",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/kenseitehdev/MokshaJS.git"
-  },
-  "bugs": {
-    "url": "https://github.com/kenseitehdev/MokshaJS/issues"
-  },
-  "homepage": "https://github.com/kenseitehdev/MokshaJS#readme",
-  "peerDependencies": {
-    "react": "^17.0.0",
-    "vue": "^2.6.0"
-  },
-  "devDependencies": {
-    "babel-loader": "^8.0.0",
-    "jest": "^27.0.0",
-    "jsdoc": "^4.0.3",
-    "webpack": "^5.0.0"
-  },
-  "files": [
-    "moksha.js",
-    "README.md"
-  ],
-  "publishConfig": {
-    "tag": "beta"
-  },
-  "private": false,
-  "dependencies": {
-    "crypto-js": "^4.2.0",
-    "cryptojs": "^2.5.3",
-    "docsify": "^4.13.1",
-    "dompurify": "^3.1.7",
-    "http-server": "^14.1.1",
-    "jsdom": "^25.0.1",
-    "mokshajs": "^0.9.5",
-    "vite": "^5.4.9"
-  }
+  "author": "",
+  "license": "ISC"
 }
