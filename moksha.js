@@ -1,89 +1,89 @@
 let components =[];
 class Batch {
     constructor() {
-        this.queue = [];
+        this.queue = new Set(); 
         this.isFlushing = false;
+        this.flushTimeout = null; 
     }
     add(updateFunction) {
-        this.queue.push(updateFunction);
-        this.flush(); 
+        this.queue.add(updateFunction); 
+        this.scheduleFlush(); 
+    }
+    scheduleFlush() {
+        if (this.isFlushing) return; 
+        if (this.flushTimeout) { clearTimeout(this.flushTimeout); }
+        this.flushTimeout = setTimeout(() => this.flush(), 0); 
     }
     flush() {
-        if (this.isFlushing) return; 
+        if (this.queue.size === 0) return; 
         this.isFlushing = true;
         requestAnimationFrame(() => {
             this.queue.forEach(updateFunction => updateFunction());
-            this.queue = []; 
+            this.queue.clear(); 
             this.isFlushing = false;
         });
     }
 }
 class Reactive {
-    constructor(initialState) {
-        this.state = this.createReactiveState(initialState);
-        this.subscribers = new Set();
-    }
-    createReactiveState(state) {
-        const self = this;
-        return new Proxy(state, {
-            set(target, property, value) {
-                target[property] = value;
-                self.notify(); // Notify subscribers on state change
-                return true;
-            }
-        });
-    }
+    constructor() {this.subscribers = new Set(); }
     subscribe(callback) {this.subscribers.add(callback);}
-    notify() { this.subscribers.forEach(callback => callback(this.state)); }
+    unsubscribe(callback) {this.subscribers.delete(callback);}
+    notify() {this.subscribers.forEach(callback => callback());}
+    createReactiveState(initialState) {
+        const handler = {
+            set(target, property, value) {
+                target[property] = value; 
+                this.notify(); 
+                return true; 
+            },
+            get(target, property) {return target[property]; }
+        };
+        const state = new Proxy(initialState, handler); 
+        return state; 
+    }
 }
 class Store {
     constructor(initialState = {}) {
-        this.state = this._loadState() || initialState;
+        this.reactiveState = new Reactive(this._loadState() || initialState);
         this.listeners = {};
         this.batch = new Batch();
-        this.derivedState = {}; // Updated from derived
+        this.derivedState = {}; 
     }
     createNamespace(namespace, initialState) {
-        if (!this.state[namespace]) {
-            this.state[namespace] = initialState;
+        if (!this.reactiveState.state[namespace]) {
+            this.reactiveState.state[namespace] = initialState;
             this.listeners[namespace] = [];
-            this._saveState();
+            this.reactiveState.notify(); 
         } else {Error.logWarning(`Namespace ${namespace} already exists.`);}
     }
     subscribe(namespace, listener) {
-        if (!this.listeners[namespace]) {throw new Error(`Namespace ${namespace} not found.`);}
+        if (!this.listeners[namespace]) { throw new Error(`Namespace ${namespace} not found.`);}
         this.listeners[namespace].push(listener);
-        return () => {
-            this.listeners[namespace] = this.listeners[namespace].filter(l => l !== listener);
-        };
+        return () => {this.listeners[namespace] = this.listeners[namespace].filter(l => l !== listener);};
     }
     derive(namespace, deriveFunction) {
-        if (!this.state[namespace]) {throw new Error(`Namespace ${namespace} not found.`); }
-        this.derivedState[namespace] = deriveFunction(this.state[namespace]);
-        this.subscribe(namespace, () => { this.derivedState[namespace] = deriveFunction(this.state[namespace]);});
+        if (!this.reactiveState.state[namespace]) {throw new Error(`Namespace ${namespace} not found.`);}
+        this.derivedState[namespace] = deriveFunction(this.reactiveState.state[namespace]);
+        this.subscribe(namespace, () => {this.derivedState[namespace] = deriveFunction(this.reactiveState.state[namespace]);});
     }
     getDerived(namespace) {return this.derivedState[namespace];}
-    setState(namespace, newState) {
-        if (!this.state[namespace]) {throw new Error(`Namespace ${namespace} not found.`);}
-        this.batch.add(() => {
-            const prevState = this.state[namespace];
-            const updatedState = { ...prevState, ...newState };
-
-            if (!this._isEqual(prevState, updatedState)) {
-                this.state[namespace] = updatedState;
-                this._notifyListeners(namespace);
-                this._saveState();
-            }
+ setState(newValues) {
+        if (typeof newValues !== 'object' || newValues === null) {
+            console.error('New values must be an object');
+            return;
+        }
+        Object.entries(newValues).forEach(([key, value]) => {
+            if (key in this.state) { this.state[key] = value; } 
+            else {console.warn(`Key "${key}" does not exist in the state`);}
         });
     }
-    getState(namespace) {return this.state[namespace];}
+    getState(namespace) {return this.reactiveState.state[namespace];}
     _notifyListeners(namespace) {
         const namespaceListeners = this.listeners[namespace];
-        if (namespaceListeners) {this.batch.add(() => { namespaceListeners.forEach(listener => listener(this.state[namespace]));});
-        }
+        if (namespaceListeners) {this.batch.add(() => {namespaceListeners.forEach(listener => listener(this.reactiveState.state[namespace]));});}
     }
-    _isEqual(prevState, newState) {return JSON.stringify(prevState) === JSON.stringify(newState);}
-    _saveState() {localStorage.setItem('storeState', JSON.stringify(this.state));}
+    _isEqual(prevState, newState) { return JSON.stringify(prevState) === JSON.stringify(newState);}
+    _saveState() {localStorage.setItem('storeState', JSON.stringify(this.reactiveState.state));}
     _loadState() {
         const savedState = localStorage.getItem('storeState');
         return savedState ? JSON.parse(savedState) : null;
@@ -100,8 +100,8 @@ class EventBus {
     clear(event) {if (this.listeners[event]) { delete this.listeners[event]; }}
 }
 class Error {
-    static logWarning(warning) {Error.logError("Warning:", warning);}
-    static logError(error) {Error.logError("Error:", error);}
+    static logWarning(warning) {console.warn("Warning:", warning);}
+    static logError(error) {console.error("Error:", error); }
     static handler(error) {this.logError(error);}
 }
 function defineComponent({ name, template,connectedCallback, props = {} }) {
@@ -166,16 +166,13 @@ components.push({ id: components.length, component: this });
             this.appendChild(content);
             this.lifecycle.mounted=true;
         }
-        replacePlaceholdersInContent(content) {
-            content.querySelectorAll("*").forEach(el => { el.innerHTML = el.innerHTML.replace(/{{\s*(\w+)\s*}}/g, (match, p1) => {
+        replacePlaceholdersInContent(content) { content.querySelectorAll("*").forEach(el => { el.innerHTML = el.innerHTML.replace(/{{\s*(\w+)\s*}}/g, (match, p1) => {
                     return this.getAttribute(p1) || this.props[p1] || "";
                 });
             });
         }
     }
-if (!customElements.get(name)) {
-    customElements.define(name, CustomElement);
-}
+if (!customElements.get(name)) {customElements.define(name, CustomElement);}
     return (props = {}) => {
         const el = document.createElement(name);
         Object.keys(props).forEach(key => el.setAttribute(key, props[key]));
@@ -209,10 +206,16 @@ function debounce(func, wait) {
         timeout = setTimeout(() => func.apply(context, args), wait);
     };
 }
+class ComponentManager {
+    constructor() {
+        this.elements = [];
+        this.components = [];
+    }
+}
 class Selector {
     constructor(selector, option = "") {
         this.selector = selector;
-        this.unmountedComponents = []; // Initialize this to avoid undefined errors
+        this.unmountedComponents = []; 
         this.elements = this._getElements(selector, option);
     }
     _getElements(selector, option) {
@@ -220,7 +223,6 @@ class Selector {
         if (selector.startsWith("#")) {elements = document.getElementById(selector.slice(1));} 
         else if (selector.startsWith(".")) { elements = Array.from(document.getElementsByClassName(selector.slice(1)));} 
         else {elements = Array.from(document.getElementsByTagName(selector));}
-
         if (!elements || (Array.isArray(elements) && elements.length === 0)) {
             elements = this.unmountedComponents.filter(comp => {
                 if (selector.startsWith("#")) { return comp.id === selector.slice(1); } 
@@ -237,6 +239,11 @@ class Selector {
             if (el) Object.assign(el.style, styles);
         });
         return this;
+    }
+    get(name) {
+        return this.components
+            .filter(comp => !comp.mounted && (!name || comp.instance.name === name))
+            .map(comp => comp.instance);
     }
     text(content) {
         this.elements = Array.isArray(this.elements) ? this.elements : [this.elements];
@@ -335,6 +342,7 @@ const selector = (selector) => new Selector(selector);
 const store = (state) => new Store(state);
 const eventHandler = (handler) => new EventHandler(handler);
 const reactive = (reactive) => new Reactive(reactive);
+const compManager = (compManager) => new ComponentManager(compManager);
 const lazyLoad = async (componentPath) => {
     try {
         const { default: MyComponent } = await import(componentPath);
@@ -403,6 +411,7 @@ const $ = {
     reactive,
     Error,
     components,
+    compManager,
     vDOM: null,
     init(mountSelector, callback) {
         window.addEventListener("load", () => {
@@ -433,13 +442,7 @@ const $ = {
     },
 updateVNode(newVNode) {
     const parentEl = this.vDOM.el.parentNode; 
-    if (parentEl) {
-        const isSame = diff(this.vDOM, newVNode);
-        if (!isSame) {
-            patchChildren(parentEl, this.vDOM.children, newVNode.children); }
-    }
-    this.vDOM = newVNode; 
-},
+    if (parentEl) {const isSame = diff(this.vDOM, newVNode); if (!isSame) { patchChildren(parentEl, this.vDOM.children, newVNode.children); }}this.vDOM = newVNode; },
     registerComponent(name, component) {this.components.add(component);},
     updateGlobalState(newState) {
         this.globalState = { ...this.globalState, ...newState };
