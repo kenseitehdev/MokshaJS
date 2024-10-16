@@ -1,6 +1,6 @@
 {
   "name": "mokshajs",
-  "version": "0.9.5",
+  "version": "1.0.0",
   "description": "Ultra lightweight frontend library",
   "main": "app.js",
   "scripts": {
@@ -41,7 +41,13 @@
   },
   "private": false,
   "dependencies": {
+    "crypto-js": "^4.2.0",
+    "cryptojs": "^2.5.3",
     "docsify": "^4.13.1",
-    "mokshajs": "^0.9.5"
+    "dompurify": "^3.1.7",
+    "http-server": "^14.1.1",
+    "jsdom": "^25.0.1",
+    "mokshajs": "^0.9.5",
+    "vite": "^5.4.9"
   }
 }
