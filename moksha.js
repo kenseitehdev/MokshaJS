@@ -105,76 +105,81 @@ class Error {
     static logError(error) {console.error("Error:", error); }
     static handler(error) {this.logError(error);}
 }
-function defineComponent({ name, template,connectedCallback, props = {} }) {
+function defineComponent({ name, template, connectedCallback, props = {}, methods = {} }) {
     class CustomElement extends HTMLElement {
-        constructor(store, namespace,updateCallback, methods) {
+        constructor(store, namespace, updateCallback) {
             super();
             this.props = { ...props };
             this.template = document.createElement("template");
             this.template.innerHTML = template;
             this.namespace = namespace;
-            this.store=store;
-            this.methods = methods;
+            this.store = store;
             this.updateCallback = updateCallback;
-            this.userConnectedCallback = connectedCallback;
+            for (const methodName in methods) {this[methodName] = methods[methodName].bind(this);}
             this.state = { updated: false };
-            this.lifecycle= {
-                created:false,
-                mounted:false,
-                updated:false,
-                destroyed:false
-            }
+            this.lifecycle = {
+                created: false,
+                mounted: false,
+                updated: false,
+                destroyed: false,
+            };
         }
         connectedCallback() {
-            this.lifecycle.created=true;
+            this.lifecycle.created = true;
             this.render();
-            this.userConnectedCallback ? this.userConnectedCallback():"";
+            if (connectedCallback) {connectedCallback.call(this);}
             this.addEventListener('click', this.handleClick);
         }
-    disconnectedCallback() {
-    this.removeEventListener('click', this.handleClick); 
-    this.removeEventListener('keyup', this.handleKeyUp); 
-    if (this.unsubscribe) {this.unsubscribe(); }
-    if (this.intervalId) {clearInterval(this.intervalId);}
-    if (this.timeoutId) {clearTimeout(this.timeoutId);}
-}
-shouldRender(newProps) { for (const key in newProps) { if (this.props[key] !== newProps[key]) { return true;  } } return false; }
-    update(newProps) {
-        if (this.shouldRender(newProps)) {
-            this.props = newProps; 
-            this.render(); 
-            this.lifecycle.updated=true;
+        disconnectedCallback() {
+            this.removeEventListener('click', this.handleClick); 
+            if (this.unsubscribe) { this.unsubscribe(); }
+            if (this.intervalId) { clearInterval(this.intervalId); }
+            if (this.timeoutId) { clearTimeout(this.timeoutId); }
         }
-    }
+        shouldRender(newProps) { 
+            for (const key in newProps) { 
+                if (this.props[key] !== newProps[key]) { return true;  } 
+            } 
+            return false; 
+        }
+        update(newProps) {
+            if (this.shouldRender(newProps)) {
+                this.props = newProps; 
+                this.render(); 
+                this.lifecycle.updated = true;
+            }
+        }
         destroy() {
             this.remove(); 
-            this.lifecycle.destroyed=true;
+            this.lifecycle.destroyed = true;
             this.disconnectedCallback();
         }
-        static get observedAttributes() {return Object.keys(props);}
+        static get observedAttributes() { return Object.keys(props); }
         attributeChangedCallback(attr, oldValue, newValue) {
-        if (oldValue !== newValue) {
-            this.updated=false;
-            this.props[attr] = newValue;
-            this.update(this.props);
+            if (oldValue !== newValue) {
+                this.updated = false;
+                this.props[attr] = newValue;
+                this.update(this.props);
+            }
         }
-    }
         render() {
-components.push({ id: components.length, component: this });
+            components.push({ id: components.length, component: this });
             const content = this.template.content.cloneNode(true);
             this.replacePlaceholdersInContent(content);
             this.innerHTML = "";
             this.appendChild(content);
-            this.lifecycle.mounted=true;
+            this.lifecycle.mounted = true;
         }
-        replacePlaceholdersInContent(content) { content.querySelectorAll("*").forEach(el => { el.innerHTML = el.innerHTML.replace(/{{\s*(\w+)\s*}}/g, (match, p1) => {
+        replacePlaceholdersInContent(content) { 
+            content.querySelectorAll("*").forEach(el => { 
+                el.innerHTML = el.innerHTML.replace(/{{\s*(\w+)\s*}}/g, (match, p1) => {
                     return this.getAttribute(p1) || this.props[p1] || "";
                 });
             });
         }
     }
-if (!customElements.get(name)) {customElements.define(name, CustomElement);}
-    return (props = {}) => {
+    if (!customElements.get(name)) {customElements.define(name, CustomElement);}
+    return (props = {}, methods = {}) => {
         const el = document.createElement(name);
         Object.keys(props).forEach(key => el.setAttribute(key, props[key]));
         return el;
@@ -237,11 +242,7 @@ class Selector {
     removeAllChildren() {
     this.elements = Array.isArray(this.elements) ? this.elements : [this.elements];
     this.elements.forEach(el => {
-        if (el) {
-            while (el.firstChild) {
-                el.removeChild(el.firstChild);
-            }
-        }
+        if (el) { while (el.firstChild) { el.removeChild(el.firstChild); } }
     });
     return this;
 }
@@ -249,6 +250,12 @@ class Selector {
         this.elements = Array.isArray(this.elements) ? this.elements : [this.elements];
         this.elements.forEach(el => {
             if (el) Object.assign(el.style, styles);
+        });
+        return this;
+    }
+     html(content) {this.elements = Array.isArray(this.elements) ? this.elements : [this.elements];
+this.elements.forEach(el => {
+            if (el) {el.innerHTML = content;}
         });
         return this;
     }
