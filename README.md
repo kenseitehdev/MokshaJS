@@ -1,6 +1,6 @@
 # MokshaJS
 
-MokshaJS is a lightweight JavaScript framework designed to build reactive, component-based user interfaces. It combines state management, event handling, component lifecycle management, and DOM rendering to create dynamic, scalable web applications. It also includes built-in utilities for event throttling, debouncing, and virtual DOM manipulation.
+MokshaJS is a lightweight JavaScript library designed to build reactive, component-based user interfaces. It combines state management, event handling, component lifecycle management, and DOM rendering to create dynamic, scalable web applications. It also includes built-in utilities for event throttling, debouncing, and virtual DOM manipulation.
 
 ## Table of Contents
 
