@@ -1,140 +1,203 @@
 # MokshaJS
-ultra lightweight, robust frontend micro- library/framework
-# Documentation
 
-## `Batch` Class
-A utility class to manage a batch of functions and execute them using the browser's `requestAnimationFrame`.
+MokshaJS is a lightweight JavaScript framework designed to build reactive, component-based user interfaces. It combines state management, event handling, component lifecycle management, and DOM rendering to create dynamic, scalable web applications. It also includes built-in utilities for event throttling, debouncing, and virtual DOM manipulation.
 
-### Methods:
-- **`add(updateFunction)`**: Adds a new function to the queue and triggers a flush if it's not already flushing.
-- **`flush()`**: Flushes the queue by running all stored functions in `requestAnimationFrame`. Avoids redundant flushing.
+## Table of Contents
 
----
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Reference](#api-reference)
+  - [Core Components](#core-components)
+  - [Utilities](#utilities)
+- [Examples](#examples)
+- [License](#license)
 
-## `Reactive` Class
-A class that wraps state and provides a reactive system that triggers updates when the state changes.
+## Features
 
-### Constructor:
-- **`constructor(initialState)`**: Takes an initial state and converts it into a reactive state.
+- **Reactive State Management:** Track changes in your application's state and automatically update the DOM when data changes.
+- **Component Lifecycle:** Define, mount, and unmount custom components with full control over their lifecycle.
+- **Event Bus:** Manage global events and decouple components through an event bus system.
+- **Batch Updates:** Efficiently batch DOM updates using requestAnimationFrame to prevent unnecessary reflows.
+- **Throttling and Debouncing:** Built-in utility functions for throttling and debouncing events.
+- **Virtual DOM:** Use a virtual DOM diffing algorithm to optimize DOM updates.
+- **Lazy Loading:** Dynamically load components as needed for better performance.
 
-### Methods:
-- **`createReactiveState(state)`**: Converts an object into a reactive Proxy.
-- **`subscribe(callback)`**: Adds a callback that will be triggered when the state changes.
-- **`notify()`**: Notifies all subscribers of the state change.
+## Installation
 
----
+You can install MokshaJS by including the script in your HTML file or by importing it into your project:
 
-## `Store` Class
-Manages application state with support for namespaces and derived state. Allows batching of state updates.
+```html
+<script type="module" src="path/to/moksha.js"></script>
+```
 
-### Constructor:
-- **`constructor(initialState = {})`**: Initializes store state and listeners.
-  
-### Methods:
-- **`createNamespace(namespace, initialState)`**: Creates a new namespace with a given initial state.
-- **`subscribe(namespace, listener)`**: Subscribes a listener to changes in a given namespace.
-- **`derive(namespace, deriveFunction)`**: Creates derived state for a namespace.
-- **`getDerived(namespace)`**: Retrieves the derived state of a namespace.
-- **`setState(namespace, newState)`**: Sets a new state for the given namespace and triggers listeners if the state has changed.
-- **`getState(namespace)`**: Returns the state of the given namespace.
+Or, if using a bundler like Webpack or Rollup:
 
----
+```js
+import { $ } from './moksha.js';
+```
 
-## `EventBus` Class
-A simple pub-sub system to emit and listen to events.
+## Usage
 
-### Methods:
-- **`on(event, listener)`**: Registers a listener for a given event.
-- **`emit(event, ...args)`**: Emits an event with arguments to all registered listeners.
-- **`off(event, listener)`**: Removes a specific listener from an event.
-- **`clear(event)`**: Clears all listeners from an event.
+### Basic Example
 
----
+Below is a basic example of using MokshaJS to create a reactive component:
 
-## `Error` Static Class
-A utility class for logging and handling errors.
+```javascript
+import { $, defineComponent, store } from './moksha.js';
 
-### Methods:
-- **`logWarning(warning)`**: Logs a warning.
-- **`logError(error)`**: Logs an error.
-- **`handler(error)`**: Handles errors and logs them.
+const globalStore = store({
+    count: 0
+});
 
----
+defineComponent({
+    name: 'counter-component',
+    template: `
+        <div>
+            <h1>Count: {{ count }}</h1>
+            <button id="increment">Increment</button>
+        </div>
+    `,
+    connectedCallback() {
+        const button = this.querySelector('#increment');
+        button.addEventListener('click', () => {
+            globalStore.setState({ count: globalStore.getState('count') + 1 });
+        });
+    },
+    props: { count: 0 }
+});
 
-## `defineComponent` Function
-Creates a custom web component that binds to a store's namespace and renders a template.
+$.init('#app', () => {
+    const counterElement = document.createElement('counter-component');
+    document.querySelector('#app').appendChild(counterElement);
+});
+```
 
-### Arguments:
-- **`{ name, template, connectedCallback, props = {} }`**: An object defining the component name, template, lifecycle callbacks, and props.
+### API Reference
 
-### Returns:
-- A function that creates the custom element.
+#### Core Components
 
-### Class: `CustomElement`
-Represents the custom element created by `defineComponent`.
+##### `Batch`
+A class that batches update functions and ensures that they run efficiently using `requestAnimationFrame`.
 
-#### Methods:
-- **`connectedCallback()`**: Lifecycle method that is triggered when the component is attached to the DOM.
-- **`disconnectedCallback()`**: Lifecycle method triggered when the component is detached from the DOM.
-- **`shouldRender(newProps)`**: Determines whether the component should re-render.
-- **`update(newProps)`**: Updates the component's properties and triggers a re-render if necessary.
-- **`render()`**: Renders the component's template and replaces placeholders with property values.
+```javascript
+class Batch {
+    add(updateFunction) { ... }
+    scheduleFlush() { ... }
+    flush() { ... }
+}
+```
 
----
+##### `Reactive`
+Manages reactive state. Notifies subscribers when the state changes.
 
-## `Selector` Class
-A utility class to perform various DOM manipulations.
+```javascript
+class Reactive {
+    createReactiveState(initialState) { ... }
+    subscribe(callback) { ... }
+    notify() { ... }
+}
+```
 
-### Constructor:
-- **`constructor(selector, option = "")`**: Initializes the selector with a CSS selector and an optional parameter.
+##### `Store`
+Manages the application's state with namespaces. Supports subscription and state derivation.
 
-### Methods:
-- **`css(styles)`**: Applies a set of CSS styles to the selected elements.
-- **`text(content)`**: Sets the text content of the selected elements.
-- **`attributes(action, key, value)`**: Gets or sets an attribute on the selected elements.
-- **`value(action, val)`**: Gets or sets the value of the selected input elements.
-- **`children()`**: Gets the child elements of the selected elements.
-- **`index()`**: Returns the index of the selected elements within their parent.
-- **`classList(action, classes)`**: Adds, removes, or toggles class names on the selected elements.
-- **`appendChild(childElement)`**: Appends a child element to the selected elements.
-- **`on(event, callback)`**: Adds an event listener to the selected elements.
+```javascript
+class Store {
+    createNamespace(namespace, initialState) { ... }
+    subscribe(namespace, listener) { ... }
+    derive(namespace, deriveFunction) { ... }
+    getState(namespace) { ... }
+    setState(newValues) { ... }
+}
+```
 
----
+##### `EventBus`
+A global event bus that allows decoupled components to communicate with each other.
 
-## Utility Functions
+```javascript
+class EventBus {
+    on(event, listener) { ... }
+    emit(event, ...args) { ... }
+    off(event, listener) { ... }
+}
+```
 
-### `throttle(func, limit)`
-Creates a throttled version of a function that will only be called once every `limit` milliseconds.
+##### `defineComponent`
+Creates a custom web component and manages its lifecycle and rendering.
 
-### `debounce(func, wait)`
-Creates a debounced version of a function that will only be called after `wait` milliseconds have passed since the last call.
+```javascript
+function defineComponent({ name, template, connectedCallback, props = {} }) { ... }
+```
 
----
+#### Utilities
 
-## `VNode` Class
-Represents a virtual DOM node for diffing and patching.
+##### `throttle`
+Limits the execution of a function to once in a specified time period.
 
-### Constructor:
-- **`constructor(tag, props = {}, children = [], key = null)`**: Creates a virtual node with a tag, props, children, and an optional key.
+```javascript
+function throttle(func, limit) { ... }
+```
 
----
+##### `debounce`
+Delays the execution of a function until after a specified delay.
 
-## Diffing and Patching
+```javascript
+function debounce(func, wait) { ... }
+```
 
-### `diff(oldVNode, newVNode)`
-Computes the differences between two virtual nodes and returns the patches needed.
+##### `lazyLoad`
+Dynamically loads a component from a given path.
 
-### `patchChildren(parentEl, oldChildren, newChildren)`
-Applies patches to the child elements of a parent element based on differences in the virtual DOM.
+```javascript
+async function lazyLoad(componentPath) { ... }
+```
 
----
+##### `Selector`
+Utility for selecting and manipulating DOM elements.
 
-## Global Object: `$`
-A utility object for managing global application state, components, and rendering.
+```javascript
+class Selector {
+    css(styles) { ... }
+    text(content) { ... }
+    on(event, callback) { ... }
+}
+```
 
-### Methods:
-- **`init(mountSelector, callback)`**: Initializes the application and mounts the virtual DOM to a given selector.
-- **`render(mountPoint)`**: Renders the virtual DOM to a mount point.
-- **`updateVNode(newVNode)`**: Updates the virtual DOM with new changes.
-- **`registerComponent(name, component)`**: Registers a new component.
-- **`updateGlobalState(newState)`**: Updates the global state and triggers re-renders for all components.
+## Examples
+
+### Creating a Reactive Counter
+
+```javascript
+import { $, defineComponent, store } from './moksha.js';
+
+const globalStore = store({
+    count: 0
+});
+
+defineComponent({
+    name: 'counter-component',
+    template: `
+        <div>
+            <h1>Count: {{ count }}</h1>
+            <button id="increment">Increment</button>
+        </div>
+    `,
+    connectedCallback() {
+        const button = this.querySelector('#increment');
+        button.addEventListener('click', () => {
+            globalStore.setState({ count: globalStore.getState('count') + 1 });
+        });
+    },
+    props: { count: 0 }
+});
+
+$.init('#app', () => {
+    const counterElement = document.createElement('counter-component');
+    document.querySelector('#app').appendChild(counterElement);
+});
+```
+
+## License
+
+MokshaJS is open-source software licensed under the [MIT License](https://opensource.org/licenses/MIT).
