@@ -234,6 +234,17 @@ class Selector {
         if (option === "all") {return Array.isArray(elements) ? elements : [elements]; }
         return Array.isArray(elements) ? elements[0] : elements;
     }
+    removeAllChildren() {
+    this.elements = Array.isArray(this.elements) ? this.elements : [this.elements];
+    this.elements.forEach(el => {
+        if (el) {
+            while (el.firstChild) {
+                el.removeChild(el.firstChild);
+            }
+        }
+    });
+    return this;
+}
     css(styles) {
         this.elements = Array.isArray(this.elements) ? this.elements : [this.elements];
         this.elements.forEach(el => {
