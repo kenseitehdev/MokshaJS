@@ -11,5 +11,8 @@
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-packager": "^17.1.2"
-  }
+  },
+  "publishConfig": {
+  "registry": "https://npm.pkg.github.com"
+}
 }
