@@ -1,140 +1,194 @@
-# MokshaJS
-ultra lightweight, robust frontend micro- library/framework
-# Documentation
+# MokshaJS Documentation
 
-## `Batch` Class
-A utility class to manage a batch of functions and execute them using the browser's `requestAnimationFrame`.
+## Overview
+MokshaJS is an ultra-lightweight frontend library/framework that provides tools for building reactive applications. This documentation covers the main classes and functions included in the library.
 
-### Methods:
-- **`add(updateFunction)`**: Adds a new function to the queue and triggers a flush if it's not already flushing.
-- **`flush()`**: Flushes the queue by running all stored functions in `requestAnimationFrame`. Avoids redundant flushing.
-
----
-
-## `Reactive` Class
-A class that wraps state and provides a reactive system that triggers updates when the state changes.
-
-### Constructor:
-- **`constructor(initialState)`**: Takes an initial state and converts it into a reactive state.
-
-### Methods:
-- **`createReactiveState(state)`**: Converts an object into a reactive Proxy.
-- **`subscribe(callback)`**: Adds a callback that will be triggered when the state changes.
-- **`notify()`**: Notifies all subscribers of the state change.
+## Table of Contents
+- [Batch](#batch)
+- [Reactive](#reactive)
+- [Store](#store)
+- [EventBus](#eventbus)
+- [Error](#error)
+- [Component Management](#component-management)
+- [Selector](#selector)
+- [VNode](#vnode)
+- [Utilities](#utilities)
+- [Platform Detection](#platform-detection)
+- [Global Methods](#global-methods)
 
 ---
 
-## `Store` Class
-Manages application state with support for namespaces and derived state. Allows batching of state updates.
+## Batch
 
-### Constructor:
-- **`constructor(initialState = {})`**: Initializes store state and listeners.
-  
-### Methods:
-- **`createNamespace(namespace, initialState)`**: Creates a new namespace with a given initial state.
-- **`subscribe(namespace, listener)`**: Subscribes a listener to changes in a given namespace.
-- **`derive(namespace, deriveFunction)`**: Creates derived state for a namespace.
-- **`getDerived(namespace)`**: Retrieves the derived state of a namespace.
-- **`setState(namespace, newState)`**: Sets a new state for the given namespace and triggers listeners if the state has changed.
-- **`getState(namespace)`**: Returns the state of the given namespace.
+### Description
+The `Batch` class manages a set of update functions and flushes them in a batched manner to optimize performance.
+
+### Methods
+- **constructor()**: Initializes the batch with an empty queue and state variables.
+- **add(updateFunction)**: Adds an update function to the batch and schedules a flush.
+- **scheduleFlush()**: Schedules the flush operation if not already flushing.
+- **flush()**: Executes all queued update functions in the next animation frame.
 
 ---
 
-## `EventBus` Class
-A simple pub-sub system to emit and listen to events.
+## Reactive
 
-### Methods:
-- **`on(event, listener)`**: Registers a listener for a given event.
-- **`emit(event, ...args)`**: Emits an event with arguments to all registered listeners.
-- **`off(event, listener)`**: Removes a specific listener from an event.
-- **`clear(event)`**: Clears all listeners from an event.
+### Description
+The `Reactive` class allows for the creation of reactive states that notify subscribers upon changes.
 
----
-
-## `Error` Static Class
-A utility class for logging and handling errors.
-
-### Methods:
-- **`logWarning(warning)`**: Logs a warning.
-- **`logError(error)`**: Logs an error.
-- **`handler(error)`**: Handles errors and logs them.
+### Methods
+- **constructor()**: Initializes the reactive instance with an empty set of subscribers.
+- **subscribe(callback)**: Adds a callback to the subscribers list.
+- **unsubscribe(callback)**: Removes a callback from the subscribers list.
+- **notify()**: Notifies all subscribers to execute their callbacks.
+- **createReactiveState(initialState)**: Creates a reactive state using a proxy to track changes.
 
 ---
 
-## `defineComponent` Function
-Creates a custom web component that binds to a store's namespace and renders a template.
+## Store
 
-### Arguments:
-- **`{ name, template, connectedCallback, props = {} }`**: An object defining the component name, template, lifecycle callbacks, and props.
+### Description
+The `Store` class manages application state, allowing for namespaces and derived states.
 
-### Returns:
-- A function that creates the custom element.
-
-### Class: `CustomElement`
-Represents the custom element created by `defineComponent`.
-
-#### Methods:
-- **`connectedCallback()`**: Lifecycle method that is triggered when the component is attached to the DOM.
-- **`disconnectedCallback()`**: Lifecycle method triggered when the component is detached from the DOM.
-- **`shouldRender(newProps)`**: Determines whether the component should re-render.
-- **`update(newProps)`**: Updates the component's properties and triggers a re-render if necessary.
-- **`render()`**: Renders the component's template and replaces placeholders with property values.
+### Methods
+- **constructor(initialState)**: Initializes the store with a reactive state and optional initial state.
+- **createNamespace(namespace, initialState)**: Creates a new namespace in the store.
+- **subscribe(namespace, listener)**: Subscribes a listener to changes in a namespace.
+- **derive(namespace, deriveFunction)**: Creates a derived state based on a namespace.
+- **getDerived(namespace)**: Retrieves the derived state for a namespace.
+- **setState(newValues)**: Sets new values for the state.
+- **getState(namespace)**: Retrieves the state for a namespace.
 
 ---
 
-## `Selector` Class
-A utility class to perform various DOM manipulations.
+## EventBus
 
-### Constructor:
-- **`constructor(selector, option = "")`**: Initializes the selector with a CSS selector and an optional parameter.
+### Description
+The `EventBus` class is used for event-driven communication between components.
 
-### Methods:
-- **`css(styles)`**: Applies a set of CSS styles to the selected elements.
-- **`text(content)`**: Sets the text content of the selected elements.
-- **`attributes(action, key, value)`**: Gets or sets an attribute on the selected elements.
-- **`value(action, val)`**: Gets or sets the value of the selected input elements.
-- **`children()`**: Gets the child elements of the selected elements.
-- **`index()`**: Returns the index of the selected elements within their parent.
-- **`classList(action, classes)`**: Adds, removes, or toggles class names on the selected elements.
-- **`appendChild(childElement)`**: Appends a child element to the selected elements.
-- **`on(event, callback)`**: Adds an event listener to the selected elements.
+### Methods
+- **constructor()**: Initializes the event bus with an empty listeners object.
+- **on(event, listener)**: Subscribes a listener to a specific event.
+- **emit(event, ...args)**: Emits an event, calling all subscribed listeners.
+- **off(event, listener)**: Unsubscribes a listener from an event.
+- **clear(event)**: Clears all listeners for a specific event.
 
 ---
 
-## Utility Functions
+## Error
 
-### `throttle(func, limit)`
-Creates a throttled version of a function that will only be called once every `limit` milliseconds.
+### Description
+The `Error` class provides static methods for logging warnings and errors.
 
-### `debounce(func, wait)`
-Creates a debounced version of a function that will only be called after `wait` milliseconds have passed since the last call.
-
----
-
-## `VNode` Class
-Represents a virtual DOM node for diffing and patching.
-
-### Constructor:
-- **`constructor(tag, props = {}, children = [], key = null)`**: Creates a virtual node with a tag, props, children, and an optional key.
+### Methods
+- **logWarning(warning)**: Logs a warning message with a timestamp.
+- **logError(error)**: Logs an error message with a timestamp.
+- **handler(error)**: A centralized error handler that logs errors.
 
 ---
 
-## Diffing and Patching
+## Component Management
 
-### `diff(oldVNode, newVNode)`
-Computes the differences between two virtual nodes and returns the patches needed.
+### Description
+The `defineComponent` function creates custom HTML elements with lifecycle methods and state management.
 
-### `patchChildren(parentEl, oldChildren, newChildren)`
-Applies patches to the child elements of a parent element based on differences in the virtual DOM.
+### Parameters
+- **name**: The name of the custom element.
+- **template**: The HTML template for the component.
+- **connectedCallback**: A callback executed when the component is connected to the DOM.
+- **props**: Initial properties for the component.
+- **methods**: Methods available in the component instance.
 
 ---
 
-## Global Object: `$`
-A utility object for managing global application state, components, and rendering.
+## Selector
 
-### Methods:
-- **`init(mountSelector, callback)`**: Initializes the application and mounts the virtual DOM to a given selector.
-- **`render(mountPoint)`**: Renders the virtual DOM to a mount point.
-- **`updateVNode(newVNode)`**: Updates the virtual DOM with new changes.
-- **`registerComponent(name, component)`**: Registers a new component.
-- **`updateGlobalState(newState)`**: Updates the global state and triggers re-renders for all components.
+### Description
+The `Selector` class provides methods for DOM manipulation and querying.
+
+### Methods
+- **constructor(selector, option)**: Initializes a selector with the specified selector string.
+- **_getElements(selector, option)**: Retrieves elements matching the selector.
+- **removeAllChildren()**: Removes all child elements from the selected elements.
+- **css(styles)**: Applies CSS styles to the selected elements.
+- **html(content)**: Sets the inner HTML of the selected elements.
+- **text(content)**: Sets the inner text of the selected elements.
+- **attributes(action, key, value)**: Gets or sets attributes for the selected elements.
+- **removeChild(childElements)**: Removes specified child elements from the selected elements.
+- **value(action, val)**: Gets or sets the value of input elements.
+- **children()**: Retrieves child elements of the selected elements.
+- **index()**: Gets the index of the selected elements among their siblings.
+- **map(callback)**: Maps over selected elements and applies a callback.
+- **parent()**: Retrieves parent elements of the selected elements.
+- **classList(action, classes)**: Adds or removes classes from the selected elements.
+- **reset()**: Resets the selector to its original state.
+- **appendChild(childElement)**: Appends child elements to the selected elements.
+- **on(event, callback)**: Adds event listeners to the selected elements.
+- **_getAllElements()**: Retrieves all elements from the document body.
+- **redraw()**: Redraws the selected elements in the DOM.
+
+---
+
+## VNode
+
+### Description
+The `VNode` class represents a virtual DOM node.
+
+### Properties
+- **tag**: The tag name of the virtual node.
+- **props**: The properties of the virtual node.
+- **children**: The children of the virtual node.
+- **key**: A unique key for the virtual node.
+- **el**: The actual DOM element associated with the virtual node.
+
+---
+
+## Utilities
+
+### throttle(func, limit)
+Throttles a function to ensure it runs at most once within the specified limit.
+
+### debounce(func, wait)
+Debounces a function to ensure it only runs after the specified wait time has elapsed.
+
+---
+
+## Platform Detection
+
+### Description
+Detects the platform on which the application is running.
+
+### Methods
+- **getPlatform()**: Returns the platform name.
+- **isWindows()**: Checks if the platform is Windows.
+- **isMac()**: Checks if the platform is macOS.
+- **isLinux()**: Checks if the platform is Linux.
+- **isAndroid()**: Checks if the platform is Android.
+- **isIpad()**: Checks if the platform is iPad.
+- **isIphone()**: Checks if the platform is iPhone.
+
+---
+
+## Global Methods
+
+### selector(selector)
+Creates a new `Selector` instance.
+
+### store(state)
+Creates a new `Store` instance.
+
+### eventHandler(handler)
+Creates a new `EventHandler` instance.
+
+### reactive(reactive)
+Creates a new `Reactive` instance.
+
+### compManager(compManager)
+Creates a new `ComponentManager` instance.
+
+### lazyLoad(componentPath)
+Dynamically imports and appends a component to the application.
+
+---
+
+This documentation serves as a reference for developers using MokshaJS. For further questions or contributions, please refer to the project's GitHub repository.
