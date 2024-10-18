@@ -1,6 +1,6 @@
 {
   "name": "mokshajs",
-  "version": "1.0.1",
+  "version": "1.2.0",
   "description": "ultra lightweight, robust frontend micro- library/framework # Documentation",
   "main": "min.js",
   "scripts": {
