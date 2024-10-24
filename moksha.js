@@ -1,4 +1,4 @@
-let components =[];
+let $components =[];
 class Batch {
     constructor() {
         this.queue = new Set(); 
@@ -25,7 +25,16 @@ class Batch {
     }
 }
 class Reactive {
-    constructor() {this.subscribers = new Set(); }
+constructor(obj) {
+        return new Proxy(obj, {
+            set: (target, property, value) => {
+                target[property] = value;
+                this.notify(); 
+                return true;
+            },
+            get: (target, property) => {return target[property];}
+        });
+    }
     subscribe(callback) {this.subscribers.add(callback);}
     unsubscribe(callback) {this.subscribers.delete(callback);}
     notify() {this.subscribers.forEach(callback => callback());}
@@ -56,7 +65,7 @@ class Store {
             this.reactiveState.notify(); 
         } else {Error.logWarning(`Namespace ${namespace} already exists.`);}
     }
-    subscribe(namespace, listener) {
+    $subscribe(namespace, listener) {
         if (!this.listeners[namespace]) { throw new Error(`Namespace ${namespace} not found.`);}
         this.listeners[namespace].push(listener);
         return () => {this.listeners[namespace] = this.listeners[namespace].filter(l => l !== listener);};
@@ -67,17 +76,19 @@ class Store {
         this.subscribe(namespace, () => {this.derivedState[namespace] = deriveFunction(this.reactiveState.state[namespace]);});
     }
     getDerived(namespace) {return this.derivedState[namespace];}
- setState(newValues) {
-        if (typeof newValues !== 'object' || newValues === null) {
-            console.error('New values must be an object');
-            return;
+$setState(namespace, newState) {
+        const keys = namespace.split('.');
+        let current = this.state;
+        for (let i = 0; i < keys.length - 1; i++) {
+            const key = keys[i];
+            if (!current[key]) {current[key] = {};}
+            current = current[key];
         }
-        Object.entries(newValues).forEach(([key, value]) => {
-            if (key in this.state) { this.state[key] = value; } 
-            else {console.warn(`Key "${key}" does not exist in the state`);}
-        });
+        const lastKey = keys[keys.length - 1];
+        current[lastKey] = newState;
+        this.state.notify();
     }
-    getState(namespace) {return this.reactiveState.state[namespace];}
+    $getState(namespace) {return this.reactiveState.state[namespace];}
     _notifyListeners(namespace) {
         const namespaceListeners = this.listeners[namespace];
         if (namespaceListeners) {this.batch.add(() => {namespaceListeners.forEach(listener => listener(this.reactiveState.state[namespace]));});}
@@ -99,12 +110,14 @@ class EventBus {
     off(event, listener) {if (this.listeners[event]) { this.listeners[event] = this.listeners[event].filter(l => l !== listener); } }
     clear(event) {if (this.listeners[event]) { delete this.listeners[event]; }}
 }
-class Error {
+class $Error {
     static logWarning(warning) {console.warn(`[${new Date().toISOString()}] Warning:`, warning);}
     static logError(error) {console.error(`[${new Date().toISOString()}] Error:`, error);}
     static handler(error) {this.logError(error);}
 }
-function defineComponent({ name, template, connectedCallback, props = {}, methods = {} }) {
+function $defineComponent({ name, template, connectedCallback, props = {}, methods = {} }) {
+    if (!name) {throw new Error("Component must have a 'name' property.");}
+    if (!template || typeof template !== 'string') {throw new Error("Component must have a 'template' property defined as a string.");}
     class CustomElement extends HTMLElement {
         constructor(store, namespace, updateCallback) {
             super();
@@ -116,7 +129,7 @@ function defineComponent({ name, template, connectedCallback, props = {}, method
             this.selector = this.querySelector;
             this.selectorAll = this.querySelectorAll;
             this.updateCallback = updateCallback;
-            for (const methodName in methods) {this[methodName] = methods[methodName].bind(this);}
+            for (const methodName in methods) {this[methodName] = methods[methodName].bind(this); }
             this.state = { updated: false };
             this.lifecycle = {
                 created: false,
@@ -128,7 +141,7 @@ function defineComponent({ name, template, connectedCallback, props = {}, method
         connectedCallback() {
             this.lifecycle.created = true;
             this.render();
-            if (connectedCallback) {connectedCallback.call(this);}
+            if (connectedCallback) { connectedCallback.call(this);}
             this.addEventListener('click', this.handleClick);
         }
         disconnectedCallback() {
@@ -137,20 +150,19 @@ function defineComponent({ name, template, connectedCallback, props = {}, method
             if (this.intervalId) { clearInterval(this.intervalId); }
             if (this.timeoutId) { clearTimeout(this.timeoutId); }
         }
-         selector(selector) {
-            if (this.selector) {
-                return this.selector.querySelector(selector);
-            }
+        selector(selector) {
+            if (this.selector) {return this.selector.querySelector(selector);}
             return document.querySelector(selector);
         }
         selectorAll(selector) {
-            if (this.selector) {
-                return Array.from(this.selector.querySelectorAll(selector));
-            }
+            if (this.selector) {return Array.from(this.selector.querySelectorAll(selector));}
             return Array.from(document.querySelectorAll(selector));
         }
         shouldRender(newProps) { 
-            for (const key in newProps) {  if (this.props[key] !== newProps[key]) { return true;  } } 
+            for (const key in newProps) {
+                if (this.props[key] !== newProps[key]) {return true;  }
+            } 
+            this.lifecycle.updated = false;
             return false; 
         }
         update(newProps) {
@@ -165,7 +177,7 @@ function defineComponent({ name, template, connectedCallback, props = {}, method
             this.lifecycle.destroyed = true;
             this.disconnectedCallback();
         }
-        static get observedAttributes() { return Object.keys(props); }
+        static get observedAttributes() {return Object.keys(props);}
         attributeChangedCallback(attr, oldValue, newValue) {
             if (oldValue !== newValue) {
                 this.updated = false;
@@ -174,7 +186,7 @@ function defineComponent({ name, template, connectedCallback, props = {}, method
             }
         }
         render() {
-            components.push({ id: components.length, component: this });
+            $components.push({ id: $components.length, component: this });
             const content = this.template.content.cloneNode(true);
             this.replacePlaceholdersInContent(content);
             this.innerHTML = "";
@@ -189,7 +201,7 @@ function defineComponent({ name, template, connectedCallback, props = {}, method
             });
         }
     }
-    if (!customElements.get(name)) {customElements.define(name, CustomElement);}
+    if (!customElements.get(name)) {customElements.define(name, CustomElement); }
     return (props = {}, methods = {}) => {
         const el = document.createElement(name);
         Object.keys(props).forEach(key => el.setAttribute(key, props[key]));
@@ -222,12 +234,6 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(context, args), wait);
     };
-}
-class ComponentManager {
-    constructor() {
-        this.elements = [];
-        this.components = [];
-    }
 }
 class Selector {
     constructor(selector, option = "") {
@@ -363,11 +369,6 @@ this.elements.forEach(el => {
         });
     }
 }
-const selector = (selector) => new Selector(selector);
-const store = (state) => new Store(state);
-const eventHandler = (handler) => new EventHandler(handler);
-const reactive = (reactive) => new Reactive(reactive);
-const compManager = (compManager) => new ComponentManager(compManager);
 const lazyLoad = async (componentPath) => {
     try {
         const { default: MyComponent } = await import(componentPath);
@@ -404,7 +405,7 @@ function diff(oldVNode, newVNode) {
         const patch = diff(oldChild, newChild);
         if (patch) { patches.push(patch); }
     }
-    return new VNode(newVNode.tag, newVNode.props, patches);
+    return new $VNode(newVNode.tag, newVNode.props, patches);
 }
 function patchChildren(parentEl, oldChildren, newChildren) {
     const keyMap = new Map();
@@ -419,64 +420,65 @@ function patchChildren(parentEl, oldChildren, newChildren) {
             }
             keyMap.delete(newChild.key); 
         } else {
-            const newEl = renderNode(newChild);
+            const newEl = $renderNode(newChild);
             parentEl.appendChild(newEl); 
         }
     });
     keyMap.forEach((child) => { parentEl.removeChild(child.el); });
 }
-const $ = {
-    selector,
-    store,
-    eventHandler,
-    defineComponent,
-    lazyLoad,
-    throttle,
-    debounce,
-    reactive,
-    Error,
-    components,
-    compManager,
-    vDOM: null,
-    init(mountSelector, callback) {
-        window.addEventListener("load", () => {
-            const mountPoint = document.querySelector(mountSelector);
-            if (mountPoint) {
-                mountPoint.innerHTML = "";
-                $.vDOM = new VNode("div", { id: "app" });
-                $.render(mountPoint);
-                callback();
-            } else {Error.logError(`Mount element "${mountSelector}" not found.`);
-            }
-        });
-    },
-    render(mountPoint) {
-        mountPoint.innerHTML = "";
-        $.renderNode($.vDOM, mountPoint);
-    },
-    renderNode(vnode, parent) {
-        const el = document.createElement(vnode.tag);
-        Object.entries(vnode.props).forEach(([key, value]) => {
-            el[key] = value;
-        });
-        vnode.children.forEach(child => {
-            const childNode = typeof child === "string" ? document.createTextNode(child) : $.renderNode(child, el);
-            el.appendChild(childNode);
-        });
-        parent.appendChild(el);
-    },
-updateVNode(newVNode) {
-    const parentEl = this.vDOM.el.parentNode; 
-    if (parentEl) {const isSame = diff(this.vDOM, newVNode); if (!isSame) { patchChildren(parentEl, this.vDOM.children, newVNode.children); }}this.vDOM = newVNode; },
-    registerComponent(name, component) {this.components.add(component);},
-    updateGlobalState(newState) {
-        this.globalState = { ...this.globalState, ...newState };
-        this.updateComponents();
-    },
-    updateComponents() {
-        this.components.forEach((component) => {
-            if (component.updateCallback) {component.updateCallback(this.globalState);}
-        });
-    },
+let $vDOM = null;
+let $globalState = {};
+function $init(mountSelector, callback) {
+    window.addEventListener("load", () => {
+        const mountPoint = document.querySelector(mountSelector);
+        if (mountPoint) {
+            mountPoint.innerHTML = "";
+            $vDOM = new VNode("div", { id: "app" });
+            $render(mountPoint);
+            callback();
+        } else {$logError(`Mount element "${mountSelector}" not found.`);}
+    });
+}
+function $render(mountPoint) {
+    mountPoint.innerHTML = "";
+    renderNode($vDOM, mountPoint);
+}
+function renderNode(vnode, parent) {
+    const el = document.createElement(vnode.tag);
+    Object.entries(vnode.props).forEach(([key, value]) => {el[key] = value;});
+    vnode.children.forEach(child => {
+        const childNode = typeof child === "string" ? document.createTextNode(child) : renderNode(child, el);
+        el.appendChild(childNode);
+    });
+    parent.appendChild(el);
+}
+function updateVNode(newVNode) {
+    const parentEl = vDOM.el.parentNode;
+    if (parentEl) {
+        const isSame = diff(vDOM, newVNode);
+        if (!isSame) {$patchChildren(parentEl, vDOM.children, newVNode.children);}
+    }
+    $vDOM = $newVNode;
+}
+function registerComponent(name, component) {$components.add(component);}
+function updateGlobalState(newState) {
+    globalState = { ...globalState, ...newState };
+    updateComponents();
+}
+function updateComponents() {
+    components.forEach(component => {if (component.updateCallback) {component.updateCallback(globalState);}});
+}
+const $selector = (selector) => new Selector(selector);
+const $store = (state) => new Store(state);
+const $reactive = (reactive) => new Reactive(reactive);
+export { 
+    $selector, 
+    $store, 
+    $reactive, 
+    $defineComponent,
+    $Error,
+    $components,
+    $vDOM,
+    $init,
+    $render,
 };
-export { $ }
