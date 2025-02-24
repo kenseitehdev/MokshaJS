@@ -35,10 +35,11 @@ class Batch {
 }
 class Reactive {
   constructor() {
-    this.state = {};
+this.state = {};
     this.subscribers = new Map();
     this.isBatching = false;
     this.updateQueue = [];
+    this._proxyCache = new WeakMap();
     this.state = this.createProxy(this.state);
   }
   startBatch() {
@@ -789,7 +790,7 @@ class WarningError extends Error {}
 function updateComponents() { components.forEach((e => {e.updateCallback && e.updateCallback(globalState)}))}
 const $selector = e => new Selector(e),
     $store = e => new Store(e),
-    $reactive = e => new Reactive(e),
+    $reactive = e => new Reactive(),
     $context = e => new Context(e),
     $error = e => new Error(e);
 export {
