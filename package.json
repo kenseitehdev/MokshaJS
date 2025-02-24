@@ -1,21 +1,18 @@
 {
   "name": "mokshajs",
-  "version": "1.2.2",
-  "description": "ultra lightweight, robust frontend micro- library # Documentation",
-  "main": "mokshajs-1.2.2.tgz",
-    "files": [
-    "mokshajs-1.2.2.tgz"     
-  ],
+  "version": "1.1.4",
+  "type": "module",
+  "description": "ultra lightweight, robust frontend micro-library",
+  "main": "moksha.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "kenseitehdev",
   "license": "ISC",
-  "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-packager": "^17.1.2"
-  },
   "publishConfig": {
-  "registry": "https://registry.npmjs.org/"
-}
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
 }

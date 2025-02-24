@@ -1,14 +1,14 @@
 # MokshaJS Documentation
 
 ## Overview
-MokshaJS is an ultra-lightweight frontend library/framework that provides tools for building reactive applications. This documentation covers the main classes and functions included in the library.
+MokshaJS is an ultra-lightweight frontend library designed for building reactive applications. This documentation provides an overview of the main classes and functions included in the library.
 
 ## Table of Contents
 - [Batch](#batch)
 - [Reactive](#reactive)
 - [Store](#store)
 - [EventBus](#eventbus)
-- [Error](#error)
+- [Error Handling](#error-handling)
 - [Component Management](#component-management)
 - [Selector](#selector)
 - [VNode](#vnode)
@@ -21,10 +21,9 @@ MokshaJS is an ultra-lightweight frontend library/framework that provides tools 
 ## Batch
 
 ### Description
-The `Batch` class manages a set of update functions and flushes them in a batched manner to optimize performance.
+The `Batch` class manages a queue of update functions that need to be executed. It allows batching of updates to improve performance by minimizing DOM reflows.
 
 ### Methods
-- **constructor()**: Initializes the batch with an empty queue and state variables.
 - **add(updateFunction)**: Adds an update function to the batch and schedules a flush.
 - **scheduleFlush()**: Schedules the flush operation if not already flushing.
 - **flush()**: Executes all queued update functions in the next animation frame.
@@ -34,7 +33,7 @@ The `Batch` class manages a set of update functions and flushes them in a batche
 ## Reactive
 
 ### Description
-The `Reactive` class allows for the creation of reactive states that notify subscribers upon changes.
+The `Reactive` class enables the creation of reactive states that notify subscribers upon changes.
 
 ### Methods
 - **constructor()**: Initializes the reactive instance with an empty set of subscribers.
@@ -64,7 +63,7 @@ The `Store` class manages application state, allowing for namespaces and derived
 ## EventBus
 
 ### Description
-The `EventBus` class is used for event-driven communication between components.
+The `EventBus` class facilitates event-driven communication between components.
 
 ### Methods
 - **constructor()**: Initializes the event bus with an empty listeners object.
@@ -75,7 +74,7 @@ The `EventBus` class is used for event-driven communication between components.
 
 ---
 
-## Error
+## Error Handling
 
 ### Description
 The `Error` class provides static methods for logging warnings and errors.
@@ -83,7 +82,7 @@ The `Error` class provides static methods for logging warnings and errors.
 ### Methods
 - **logWarning(warning)**: Logs a warning message with a timestamp.
 - **logError(error)**: Logs an error message with a timestamp.
-- **handler(error)**: A centralized error handler that logs errors.
+- **handler(error)**: Centralizes error handling and logging.
 
 ---
 
@@ -191,4 +190,4 @@ Dynamically imports and appends a component to the application.
 
 ---
 
-This documentation serves as a reference for developers using MokshaJS. For further questions or contributions, please refer to the project's GitHub repository.
+This documentation serves as a reference for developers using MokshaJS. For further questions or contributions, please refer to the project's [GitHub repository](https://github.com/YOUR_REPO_URL).
